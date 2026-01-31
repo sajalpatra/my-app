@@ -113,7 +113,7 @@ export default function FinancialInsights({
           <Calendar className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
           <div>
             <p className="text-sm font-medium text-gray-800 dark:text-white">
-              This Month's Transactions
+              This Month&apos;s Transactions
             </p>
             <p className="text-lg font-bold text-green-600 dark:text-green-400">
               {currentStats.total}

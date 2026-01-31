@@ -3,8 +3,16 @@ import React, { useState } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, Menu, X } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
+import Link from "next/link";
 
-export default function NavbarClient({ user }: { user: any }) {
+interface User {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  imageUrl: string;
+}
+
+export default function NavbarClient({ user }: { user: User | null }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -35,33 +43,33 @@ export default function NavbarClient({ user }: { user: any }) {
         <div className="flex items-center justify-between h-16">
           {/* Left - Logo */}
           <div className="flex-shrink-0">
-            <a
+            <Link
               href="/"
               className="text-xl font-bold bg-gradient-to-r from-green-400 via-blue-500 to-green-600 dark:from-green-300 dark:via-blue-400 dark:to-green-500 bg-clip-text text-transparent"
             >
               💰 Expense Tracker
-            </a>
+            </Link>
           </div>
 
           {/* Center - Nav Links */}
           <div className="hidden md:flex flex-1 justify-center space-x-6">
             {centerLinks.map((link) => (
-              <a key={link.name} href={link.href} className={gradientText}>
+              <Link key={link.name} href={link.href} className={gradientText}>
                 {link.name}
-              </a>
+              </Link>
             ))}
           </div>
 
           {/* Right - Auth Buttons + Dark Mode Toggle */}
           <div className="hidden md:flex items-center space-x-4">
             {authLinks.map((link) => (
-              <a
+              <Link
                 key={link.name}
                 href={link.href}
                 className={link.gradient ? gradientText : normalText}
               >
                 {link.name}
-              </a>
+              </Link>
             ))}
 
             {user && (
@@ -106,14 +114,14 @@ export default function NavbarClient({ user }: { user: any }) {
         <div className="md:hidden" id="mobile-menu">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {[...centerLinks, ...authLinks].map((link) => (
-              <a
+              <Link
                 key={link.name}
                 href={link.href}
                 onClick={closeMobileMenu}
                 className="text-gray-800 dark:text-gray-200 hover:text-gray-600 block px-3 py-2 rounded-md text-base font-medium"
               >
                 {link.name}
-              </a>
+              </Link>
             ))}
 
             {user && (

@@ -23,6 +23,8 @@ model Record{
   amount Float
   text String
   category String @default ("Other")
+  aiSuggestedCategory String?
+  aiConfidence Float?
   date DateTime @default(now())
   userId String
   user User @relation(fields: [userId], references: [clerkUserId], onDelete: Cascade)

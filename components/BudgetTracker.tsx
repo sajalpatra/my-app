@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { setBudget, deleteBudget } from "@/lib/budgetActions";
-import { AlertCircle, CheckCircle, Trash2, Plus } from "lucide-react";
+import { setBudget, deleteBudget, getAIBudgetRecommendations } from "@/lib/budgetActions";
+import { AlertCircle, CheckCircle, Trash2, Plus, Sparkles, Loader2 } from "lucide-react";
 
 type BudgetStatus = {
   id: string;
@@ -22,10 +22,39 @@ export default function BudgetTracker({
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [budgetLimit, setBudgetLimit] = useState("");
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [isLoadingRecs, setIsLoadingRecs] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
+
+  const loadRecommendations = async () => {
+    setIsLoadingRecs(true);
+    try {
+      const result = await getAIBudgetRecommendations();
+      if (result.success && result.recommendations) {
+        setRecommendations(result.recommendations);
+        setShowRecommendations(true);
+      } else {
+        alert(result.error || "Could not generate recommendations");
+      }
+    } catch (error) {
+      alert("Failed to load recommendations");
+    } finally {
+      setIsLoadingRecs(false);
+    }
+  };
+
+  const applyRecommendation = async (category: string, amount: number) => {
+    const result = await setBudget(category, amount, currentMonth, currentYear);
+    if (result.success) {
+      alert(`Budget set for ${category}: $${amount.toFixed(2)}`);
+    } else {
+      alert(result.error || "Failed to set budget");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,14 +116,76 @@ export default function BudgetTracker({
         <h2 className="text-xl font-bold text-gray-800 dark:text-white">
           💰 Budget Tracker
         </h2>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Add Budget
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={loadRecommendations}
+            disabled={isLoadingRecs}
+            className="flex items-center gap-2 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white text-sm rounded-md transition-colors"
+          >
+            {isLoadingRecs ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                AI Suggest
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add Budget
+          </button>
+        </div>
       </div>
+
+      {/* AI Recommendations */}
+      {showRecommendations && recommendations.length > 0 && (
+        <div className="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-purple-600" />
+              AI Budget Recommendations
+            </h3>
+            <button
+              onClick={() => setShowRecommendations(false)}
+              className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="space-y-2">
+            {recommendations.map((rec, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-md"
+              >
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800 dark:text-white">
+                    {rec.category}: ${rec.recommendedBudget.toFixed(2)}/month
+                  </p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    {rec.reasoning}
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    applyRecommendation(rec.category, rec.recommendedBudget)
+                  }
+                  className="ml-3 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Add Budget Form */}
       {showAddForm && (

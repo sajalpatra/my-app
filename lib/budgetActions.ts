@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { generateBudgetRecommendations } from "@/lib/aiService";
 
 export async function setBudget(
   category: string,
@@ -156,5 +157,56 @@ export async function getBudgetStatus(month: number, year: number) {
   } catch (error) {
     console.error("Error getting budget status:", error);
     return [];
+  }
+}
+
+export async function getAIBudgetRecommendations() {
+  const user = await currentUser();
+
+  if (!user) {
+    return { error: "Unauthorized" };
+  }
+
+  try {
+    // Get last 3 months of transactions
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const transactions = await db.record.findMany({
+      where: {
+        userId: user.id,
+        amount: { lt: 0 }, // Only expenses
+        date: { gte: threeMonthsAgo },
+      },
+    });
+
+    // Calculate spending per category
+    const categorySpending: { [key: string]: { total: number; months: number } } = {};
+
+    transactions.forEach((t) => {
+      const category = t.category;
+      if (!categorySpending[category]) {
+        categorySpending[category] = { total: 0, months: 3 };
+      }
+      categorySpending[category].total += Math.abs(t.amount);
+    });
+
+    // Prepare data for AI
+    const spendingData = Object.entries(categorySpending).map(([category, data]) => ({
+      category,
+      spent: data.total,
+      months: data.months,
+    }));
+
+    if (spendingData.length === 0) {
+      return { error: "Not enough transaction data for recommendations" };
+    }
+
+    const recommendations = await generateBudgetRecommendations(spendingData);
+
+    return { success: true, recommendations };
+  } catch (error) {
+    console.error("Error getting AI budget recommendations:", error);
+    return { error: "Failed to generate recommendations" };
   }
 }

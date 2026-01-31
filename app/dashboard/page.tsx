@@ -13,6 +13,7 @@ import BudgetTracker from "@/components/BudgetTracker";
 import SpendingTrends from "@/components/SpendingTrends";
 import TopCategories from "@/components/TopCategories";
 import QuickStats from "@/components/QuickStats";
+import AIInsights from "@/components/AIInsights";
 
 export default async function Dashboard() {
   const user = await currentUser();
@@ -73,7 +74,7 @@ export default async function Dashboard() {
         {/* Analytics Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           <SpendingChart transactions={transactions} />
-          <FinancialInsights transactions={transactions} />
+          <AIInsights />
           <TopCategories transactions={transactions} />
         </div>
 
